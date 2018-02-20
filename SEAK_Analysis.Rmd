@@ -1,0 +1,362 @@
+---
+title: "SEAK_Analysis"
+author: "Matthew R. Dunkle"
+date: "2/19/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Abstract
+
+This document is for the analysis of data collected in Southeast Alaska to assess variation in food web structure in streams across a gradient of hydrologic and physio-chemical conditions. This is a workind document and will be backed up on github at the following location: https://github.com/mdunkle/SEAK-Analysis.git
+
+
+``` {r, echo=F, message = F, warning=F}
+## Required packages and Data Import
+library(ggplot2)
+library(ggridges)
+library(cowplot)
+library(dplyr)
+
+setwd("/Users/matthewrdunkle/Desktop/SEAK/RScripts_Data")
+SEAK=read.csv("SEAK_Master.csv", head=T)
+SEAK_Peri=read.csv("SEAK_Periphyton.csv",head=T)
+SEAK_Det=read.csv("SEAK_Detritus.csv",head=T)
+```
+
+```{r, echo=F}
+Coho.dat=subset(SEAK, Species == "Coho")
+Dolly.dat=subset(SEAK, Species == "DollyVarden")
+```
+
+
+##Fish Data
+
+Plotting the length/weight relationship for Coho, Cutthroat, and DVs at the MT/McginConf
+
+```{r, echo=F, warning = F, message = F}
+ggplot(subset(SEAK, ReachID == c("McGinnes_Confluence", "MT_Upper")), 
+              aes(x=Length, y=Weight, color=ReachID))+geom_point(aes(group=SamplingEvent))+
+  geom_smooth()+theme(strip.background = element_blank())+
+  facet_grid(~SamplingEvent*Species)
+```
+
+Here I'm visualizing lengths by species and reach
+
+```{r, echo=F, warning = F, message = F}
+ggplot(SEAK, aes(x=StreamID, y=Length, fill=Species))+
+  geom_jitter(alpha=.5, aes(color=Species))+
+  geom_boxplot(aes(fill=Species))+xlab(NULL)+ylab("Length (mm)")+
+  theme_cowplot()+theme(axis.text.x=element_text(angle=45, hjust=1))
+```
+
+####Coho Data
+Next, I'm visualizing just the Dolly Varden data and showing the distribution as boxplots.
+
+```{r, echo=F, warning = F, message = F}
+Coho.Length = ggplot(Coho.dat, aes(x=StreamID, y=Length, group=Species))+
+  geom_boxplot(aes(group=ReachID))+
+  geom_jitter(alpha=.5)+xlab(NULL)+
+  theme_cowplot()+theme(axis.text.x=element_text(angle=45, hjust=1))
+
+Coho.Weight = ggplot(Coho.dat, aes(x=StreamID, y=Weight, group=Species))+
+  geom_boxplot(aes(group=ReachID))+
+  geom_jitter(alpha=.5)+xlab(NULL)+
+  theme_cowplot()+theme(axis.text.x=element_text(angle=45, hjust=1))
+
+Coho.a = plot_grid(Coho.Length + theme(axis.text.x=element_blank()), Coho.Weight, ncol=1, rel_heights = c(.5,1), align = "v")
+
+Coho.b = ggplot(Coho.dat, aes(x=StreamID, y=(100*Weight/(Length^3)), group=Species))+
+  geom_boxplot(aes(group=ReachID))+
+  geom_jitter(alpha=.5)+ylab("Fulton's Body Condition (K)")+xlab(NULL)+
+  theme_cowplot()+theme(axis.text.x=element_text(angle=45, hjust=1))
+plot_grid(Coho.a, Coho.b, nrow=1)
+```
+
+####Dolly Varden Data
+Next, I'm visualizing just the Dolly Varden data and showing the distribution as a boxplots.
+```{r, echo=F, warning = F, message = F}
+DV.Length = ggplot(Dolly.dat, aes(x=StreamID, y=Length, group=Species))+
+  geom_boxplot(aes(group=ReachID))+
+  geom_jitter(alpha=.5)+xlab(NULL)+
+  theme_cowplot()+theme(axis.text.x=element_text(angle=45, hjust=1))
+
+DV.Weight = ggplot(Dolly.dat, aes(x=StreamID, y=Weight, group=Species))+
+  geom_boxplot(aes(group=ReachID))+
+  geom_jitter(alpha=.5)+xlab(NULL)+
+  theme_cowplot()+theme(axis.text.x=element_text(angle=45, hjust=1))
+
+DV.a = plot_grid(DV.Length + theme(axis.text.x=element_blank()), DV.Weight, ncol=1, rel_heights = c(.5,1), align = "v")
+
+DV.b = ggplot(Dolly.dat, aes(x=StreamID, y=(100*Weight/(Length^3)), group=Species))+
+  geom_boxplot(aes(group=ReachID))+
+  geom_jitter(alpha=.5)+ylab("Fulton's Body Condition (K)")+xlab(NULL)+
+  theme_cowplot()+theme(axis.text.x=element_text(angle=45, hjust=1))
+plot_grid(DV.a, DV.b, nrow=1)
+```
+
+
+###Length Distribution by Species and Sampling Event
+Here, I'm using density ridge plots to show the distribution of lengths of each species by the two sampling events. The second plot shows the same data, but bracketed by stream type (glacial, clearwater (cw), brownwater (bw), and a combination of two (e.g. (CW/BW)) or all three (combined)). These distinctions are somewhat arbitrary, as most systems in SEAK show a combination of all three stream types and no one system is purely one type. It may be more useful to represent each of these as bins of conditions along a gradient of turbidity, flow variability, or DOC concentration. 
+
+```{r, echo=F, warning = F, message = F}
+ggplot(SEAK, aes(x=Length, y=StreamID))+geom_density_ridges(aes(fill=Species), alpha=.5)+
+  facet_wrap(~SamplingEvent)+ylab(NULL)+theme(strip.background = element_blank())
+
+ggplot(SEAK, aes(x=Length, y=StreamType))+geom_density_ridges(aes(fill=Species), alpha=.5)+
+  facet_wrap(~SamplingEvent)+ylab(NULL)+theme(strip.background = element_blank())
+```
+
+```{r, echo=F, warning = F, message = F}
+Coho.dist = ggplot(Coho.dat, aes(x=Length, y=StreamID))+geom_density_ridges(alpha=.5)+ylab(NULL)+
+  facet_wrap(~SamplingEvent)+theme(strip.background = element_blank())
+
+DV.dist = ggplot(Dolly.dat,aes(x=Length,y=StreamID))+geom_density_ridges(alpha=.5)+
+  facet_wrap(~SamplingEvent)+ylab(NULL)+theme(strip.background = element_blank())
+
+plot_grid(Coho.dist, DV.dist+theme(axis.text.y=element_blank()), ncol=2, labels = c("Coho","Dolly Varden"), rel_widths = c(1,.6))
+```
+
+```{r, warning = F, message = F}
+cohodv=ggplot(subset(SEAK, Species==c("DollyVarden","Coho")), aes(x=Length, y=StreamID, fill=Species))+
+  geom_density_ridges(alpha=.5,scale=1,size=.00001, rel_min_height=0)+
+  theme_ridges()
+cohodv
+```
+
+###Catch Per Unit Effort Across the Streams
+Here, I load the data for catch per unit effort stored in the file *SEAK_CPUE.csv*. The associated figure shows the average catch across sites within a stream system during July and September sampling with an arrow showing the trend in catch rate between the two events. Important to note, Peterson Creek had the highest catch rate (and likely density) of any site in July and almost no juvnile salmonids in September. This could be due to hypoxic conditions or disturbance caused by adult salmon spawning in high densities in this system. 
+
+```{r, echo=F, message = F, warning = F}
+SEAK_CPUE=read.csv("SEAK_CPUE.csv", head=T)
+SEAK_CPUE_Summary = SEAK_CPUE %>% group_by(StreamID, SamplingEvent, Species) %>% dplyr::summarise(mean=mean(CPUE))
+
+ggplot(SEAK_CPUE_Summary, aes(x=SamplingEvent, y = mean, color=Species, group=SamplingEvent))+geom_point()+xlab(NULL)+ylab("Mean CPUE")+
+  facet_grid(~StreamID, switch="both")+
+  theme(axis.text.x=element_blank(), axis.ticks.x = element_blank(),
+        strip.background = element_blank(), strip.placement = "outside", strip.text.x = element_text(angle=90, vjust=1),
+        panel.spacing.x=unit(0, "lines"))+
+  geom_path(aes(x=SamplingEvent, y = mean, group=Species), arrow = arrow(type="closed"), size=1, position = position_dodge(width=1), alpha=.5)
+```
+
+#Periphyton Data
+
+In this section, I visualize and analyze the data from periphyton samples taken during the 2017 pilot study.
+
+```{r, echo=F, warning = F, message = F}
+perichla=ggplot(SEAK_Peri, aes(x=SamplingEvent, y=as.numeric(ChlA.cm2)))+geom_boxplot()+scale_y_continuous()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+facet_wrap(~StreamID)
+perichla
+```
+
+```{r, echo=F, warning = F, message = F}
+ggplot(SEAK_Peri, aes(x=StreamID, y=as.numeric(ChlA.cm2)))+geom_boxplot()+scale_y_continuous()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+facet_wrap(~SamplingEvent)
+```
+
+```{r, echo=F, warning = F, message = F}
+ggplot(SEAK_Peri, aes(x=StreamID, y=as.numeric(Biomass.cm2)))+geom_boxplot()+scale_y_continuous()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+facet_wrap(~SamplingEvent)
+```
+
+```{r, echo=F, warning = F, message = F}
+ggplot(SEAK_Peri, aes(x=StreamID, y=as.numeric(AI)))+geom_boxplot()+scale_y_continuous()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+facet_wrap(~SamplingEvent)
+```
+
+```{r, echo=F, warning = F, message = F}
+ggplot(SEAK_Peri, aes(x=StreamType, y=as.numeric(ChlA.cm2), fill=StreamType))+
+  geom_boxplot(alpha=.5)+scale_y_continuous()+scale_fill_manual(values=c("chocolate4","dodgerblue","grey68","gold2"))+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+facet_wrap(~SamplingEvent)
+```
+
+```{r, echo=F, warning = F, message = F}
+ggplot(subset(SEAK_Peri, SamplingEvent=="July"), aes(x=StreamType, y=as.numeric(ChlA.cm2), fill=StreamType))+
+  geom_boxplot(alpha=.5)+scale_y_continuous()+scale_fill_manual(values=c("chocolate4","dodgerblue","grey68","gold2"))+
+  theme(axis.text.x=element_text(angle=45, hjust=1))
+```
+
+```{r, echo=F, warning = F, message = F}
+peribiomass=ggplot(subset(SEAK_Peri, AFDM_Difference>0), aes(x=StreamID, y=Biomass.cm2))+geom_boxplot()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+facet_wrap(~SamplingEvent)
+peribiomass
+```
+
+```{r, echo=F, warning = F}
+periai=ggplot(subset(SEAK_Peri, AFDM_Difference>0), aes(x=StreamID, y=AI))+geom_boxplot()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))
+```
+
+
+```{r, echo=F, warning = F}
+detritusplot=ggplot(SEAK_Det, aes(x=Stream, y=AFDM))+geom_boxplot()+
+  theme(axis.title.x=element_blank())
+detritusplot
+#save_plot("SEAK_Detritus.pdf", detritusplot, base_width=8, base_height=5)
+```
+
+```{r, echo=F, warning = F}
+Peri1=plot_grid(perichla+theme(axis.title.x=element_blank()), 
+               peribiomass+theme(axis.title.x=element_blank()),
+               labels=c("Biofilm ChlA","Biofilm Mass"),
+          label_x=.08)
+Peri1
+```
+
+```{r, echo=F, warning = F}
+Peri2=plot_grid(Peri1,
+                periai+theme(axis.title.x=element_blank()), 
+                labels=c("","Biofilm Autotrohpic Index"), nrow=2, ncol=1)
+Peri2
+#save_plot("SEAK_Periphyton.pdf", Peri2, base_width=10, base_height=6)
+```
+
+
+
+#Auxilliary Data
+
+UAS Data from Jason Fellman showing the variables measured in 2006-2007. 
+
+```{r, echo = F}
+UAS_Discharge=read.csv("UAS_Discharge.csv", head=T)
+UAS_Discharge$Date=as.Date(UAS_Discharge$Date, "%m/%d/%y")
+UA2006Discharge=ggplot(UAS_Discharge, aes(x=Date, y=Discharge, Group=Stream, color=Stream))+
+  geom_smooth()+theme_cowplot()
+
+UAS_2006_Temp=read.csv("UAS_2006_Temp.csv")
+UAS_2006_Temp$Date=as.Date(UAS_2006_Temp$Date, "%m/%d/%y")
+UAS2006Temp=ggplot(UAS_2006_Temp, aes(x=Date, y=Temp, group=Stream, color=Stream))+geom_smooth()+
+  theme_cowplot()
+
+UAS_2006_Turb=read.csv("UAS_2006_Turb.csv")
+UAS_2006_Turb$Date=as.Date(UAS_2006_Turb$Date, "%m/%d/%y")
+UAS2006Turb=ggplot(UAS_2006_Turb, aes(x=Date, y=Turbidity, group=Stream, color=Stream))+geom_smooth()+
+  theme_cowplot()
+
+UAS2006=plot_grid(UAS2006Temp+theme(axis.text.x=element_text(angle=45, hjust=1)),
+                  UAS2006Turb+theme(axis.text.x=element_text(angle=45, hjust=1)), 
+                  UA2006Discharge+theme(axis.text.x=element_text(angle=45, hjust=1)), 
+          labels=c("Temperature", "Turbidity", "Discharge"),
+          label_x=.081)
+UAS2006
+#save_plot("UAS2006.pdf", UAS2006, base_width = 10, base_height=5)
+```
+
+
+
+##Modeling Simlulations
+
+This was a practice for extracting data from Stella simulations and plotting in ggplot.
+
+```{r, echo=F}
+sssdata=read.csv("/Users/matthewrdunkle/Desktop/SEAK/Trophic\ Dynamics\ Modeling/Single\ Site\ Simulation\ Outputs/SingleSiteSimulations.csv", head=T)
+
+ggplot(sssdata, aes(x=days, y=X.Run.13..Fish.Biomass), lwd=2)+geom_line()+
+  geom_line(aes(x=days, y=X.Run.13..Subsidy.Biomass), linetype="dashed", color="red")+
+  geom_line(aes(x=days, y=X.Run.13..Invertebrate.Biomass), lwd=1, color="yellow")+
+  geom_line(aes(x=days, y=X.Run.13..Periphyton.Biomass), lwd=1, color="green")+
+  labs(y="Biomass (g/m^2)", x="Days")
+```
+
+##Making Maps for the proposal
+Here I'm doing some spatial work to make sampling location maps. For some reason, this code is no longer working and needs some attention.
+
+
+#library("tmap")
+library("tmaptools")
+library("sf")
+library("leaflet")
+library("rio")
+library("maptools")
+
+wbdhu14 = "WBDHU14.shp"
+wbdhu14geo=read_shape(file=wbdhu14, as.sf=T)
+qtm(wbdhu14geo)
+
+wbdhu8 = "WBDHU8.shp"
+wbdhu8geo = read_shape(file=wbdhu8, as.sf=T)
+qtm(wbdhu8geo)
+
+wbdhu12 = "WBDHU12.shp"
+wbdhu12geo = read_shape(file=wbdhu12, as.sf=T)
+qtm(wbdhu12geo, "NAME" )
+
+wbdhu10="WBDHU10.shp"
+wbdhu10geo=read_shape(file=wbdhu10, as.sf = T)
+qtm(wbdhu10geo)
+
+nhdflowline="NHDFlowline.shp"
+nhdflowlinegeo=read_shape(file=nhdflowline, as.sf=T)
+qtm(nhdflowlinegeo)
+
+alaskacoastline="alaska_63360_py.shp"
+alaskacoastlinegeo=read_shape(file=alaskacoastline)
+pcreek="Peterson Creek"
+wbdhu14geo=cbind(pcreek, wbdhu14geo)
+seakpoints="SEAK-Sampling-Locations.shp"
+seakpointsgeo=read_shape(file=seakpoints)
+juneauwater="tl_2015_02110_areawater.shp"
+juneauwatergeo=read_shape(file=juneauwater)
+head(juneauwatergeo, 50)
+mendenhallglacier=subset(juneauwatergeo, FULLNAME=="Mendenhall Glacier")
+juneauicefield=subset(juneauwatergeo, FULLNAME=="Juneau Icefield")
+akglaciers = "01_rgi60_Alaska.shp"
+akglaciersgeo=read_shape(file=akglaciers)
+
+tm=tm_shape(wbdhu12geo, ylim=c(58.35, 58.55), xlim=c(-134.8, -134.38))+
+  tm_fill("white")+tm_shape(wbdhu12geo[wbdhu12geo$NAME=="Lynn Canal",])+tm_fill("gray20")+
+  #tm_shape(wbdhu12geo[wbdhu12geo$NAME=="Eagle River",])+tm_fill("white", lwd=2)+tm_text(text="NAME")+tm_borders("black")+
+  #  tm_shape(wbdhu12geo[wbdhu12geo$NAME=="Herbert Glacier",])+tm_fill("white", lwd=2)+tm_borders("black")+
+  #tm_shape(wbdhu12geo[wbdhu12geo$NAME=="Mendenhall Glacier",])+tm_fill("white", lwd=2)+tm_borders("black")+
+  tm_shape(wbdhu14geo[wbdhu14geo$NAME=="Fritz Cove-Frontal Lynn Canal",])+tm_fill("gray20", lwd=2)+tm_borders("gray20")+
+  tm_shape(wbdhu14geo[wbdhu14geo$NAME=="Tee Creek-Frontal Lynn Canal",])+tm_fill("gray20", lwd=2)+tm_borders("gray20")+
+  tm_shape(wbdhu14geo[wbdhu14geo$NAME=="19010301060612-Mendenhall Peninsula",])+tm_fill("gray20", lwd=2)+
+  tm_shape(alaskacoastlinegeo)+tm_fill("white")+
+  tm_shape(juneauicefield)+tm_fill("dodgerblue")+#tm_text("FULLNAME")+
+  tm_shape(mendenhallglacier)+tm_fill("dodgerblue")+#tm_text("FULLNAME")+
+  tm_shape(akglaciersgeo)+tm_fill(col="dodgerblue")+
+  tm_shape(wbdhu14geo[wbdhu14geo$NAME=="Mendenhall River",])+tm_fill("gray", lwd=2, alpha=.5)+tm_text(text="NAME", xmod=6, ymod=4)+tm_borders("black")+
+  tm_shape(wbdhu14geo[wbdhu14geo$NAME=="Steep Creek",])+tm_fill("gray", lwd=2, alpha=.5)+tm_text(text="NAME", xmod=3, ymod=2)+tm_borders("black")+
+  tm_shape(wbdhu12geo[wbdhu12geo$NAME=="Herbert River",])+tm_fill("gray", lwd=2, alpha=.5)+tm_text(text="NAME")+tm_borders("black")+
+  tm_shape(wbdhu14geo[wbdhu14geo$NAME=="Peterson Lake-Peterson Creek",])+tm_fill("gray", lwd=2, alpha=.5)+tm_text(text="pcreek", xmod=1, ymod=-1)+tm_borders("black")+
+  tm_shape(wbdhu12geo[wbdhu12geo$NAME=="Montana Creek",])+tm_fill("gray", lwd=2, alpha=.5)+tm_text(text="NAME", xmod=0,ymod=-6)+tm_borders("black")+
+  #tm_shape(wbdhu14geo[wbdhu14geo$NAME=="Windfall Creek",])+tm_fill("white",lwd=2)+tm_text(text="NAME")+tm_borders("black")+
+  tm_shape(wbdhu14geo[wbdhu14geo$NAME=="McGinnis Creek",])+tm_fill("gray",lwd=2, alpha=.0)+tm_text(text="NAME", xmod=7.5, ymod=2)+tm_borders("black")+
+    #tm_grid(projection="longlat", labels.size=.5, alpha=.75)+
+  tm_shape(nhdflowlinegeo)+tm_lines("black", alpha=.5)+
+  tm_shape(seakpointsgeo)+tm_symbols(col="black")+
+  tm_scale_bar()+tm_style_classic()
+tm
+
+#save_tmap(tm, "AKFieldsites.png", width=3000, height=3000)
+
+
+  # function to obtain US county shape
+  get_US_county_2010_shape <- function() {
+    dir <- tempdir()
+    download.file("http://www2.census.gov/geo/tiger/GENZ2010/gz_2010_us_050_00_20m.zip", destfile = file.path(dir, "gz_2010_us_050_00_20m.zip"))
+    unzip(file.path(dir, "gz_2010_us_050_00_20m.zip"), exdir = dir)
+    read_shape(file.path(dir, "gz_2010_us_050_00_20m.shp"))
+  }
+
+# obtain US county shape
+US <- get_US_county_2010_shape()
+
+# split shape 
+US_cont <- US[!(US$STATE %in% c("02","15","72")),]  
+US_AK <- US[US$STATE == "02", ]
+US_HI <- US[US$STATE == "15",]
+
+# create state boundaries
+US_states <- unionSpatialPolygons(US_cont, IDs=US_cont$STATE)
+tmap_mode("plot")
+
+m_AK <- tm_shape(US_AK, projection = 3338) +
+  tm_polygons(border.col = "grey50", border.alpha = .5, breaks = seq(10, 50, by = 5)) +
+  tm_layout("Alaska", legend.show = FALSE, bg.color = NA, title.size = 0.8, frame = FALSE)
+print(m_AK, vp=viewport(x= 0.15, y= 0.15, width= 0.3, height= 0.3))
+```
+
